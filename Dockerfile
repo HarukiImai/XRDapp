@@ -13,13 +13,13 @@ RUN curl -fsSL https://rpm.nodesource.com/setup_${NODE_VERSION} | bash - && \
 # 作業ディレクトリを設定
 WORKDIR /app
 
-# アプリケーションの依存関係をインストールするためのファイルをコピー
+# package.jsonとpackage-lock.jsonのみをコピー
 COPY package*.json ./
 
-# 依存関係をインストール
-RUN npm install
+# クリーンインストールを実行
+RUN npm ci
 
-# アプリケーションのソースをコピー
+# その後、他のファイルをコピー
 COPY . .
 
 # アプリケーションのポートを公開
