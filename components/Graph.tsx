@@ -108,11 +108,11 @@ export function Graph({ datasets, onClear }: GraphProps) {
       },
       tooltip: {
         callbacks: {
-          label: function(context: any) {
-            const dataset = datasets[context.datasetIndex];
-            const offset = calculateOffset(context.datasetIndex);
-            const originalY = context.raw.y / offset;
-            return `${dataset.fileName}: 2θ = ${context.raw.x.toFixed(2)}°, 強度 = ${originalY.toFixed(2)}`;
+          label: function(tooltipItem: any) {
+            const dataset = datasets[tooltipItem.datasetIndex];
+            const offset = calculateOffset(tooltipItem.datasetIndex);
+            const originalY = tooltipItem.raw.y / offset;
+            return `${dataset.fileName}: 2θ = ${tooltipItem.raw.x.toFixed(2)}°, 強度 = ${originalY.toFixed(2)}`;
           }
         }
       }
