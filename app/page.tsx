@@ -6,49 +6,61 @@ import { Graph } from "@/components/Graph";
 import { X } from "lucide-react";
 import { parseXRDFile } from "@/lib/utils";
 
+interface XRDDataset {
+  id: string;
+  fileName: string;
+  data: { x: number; y: number }[];
+}
+
 export default function Home() {
-  const [xrdData, setXrdData] = useState<{ x: number; y: number }[]>([]);
-  const [fileName, setFileName] = useState<string>("");
+  const [datasets, setDatasets] = useState<XRDDataset[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // XRDファイルの解析
-
-  // ファイルアップロードの処理
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     try {
-      setFileName(file.name);
       setIsLoading(true);
       setError(null);
 
-      const content = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.onerror = () =>
-          reject(new Error("ファイルの読み込み中にエラーが発生しました"));
-        reader.readAsText(file);
-      });
+      const newDatasets = await Promise.all(
+        Array.from(files).map(async (file) => {
+          const content = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = () =>
+              reject(new Error("ファイルの読み込み中にエラーが発生しました"));
+            reader.readAsText(file);
+          });
 
-      const data = parseXRDFile(content);
-      setXrdData(data);
+          const data = parseXRDFile(content);
+          return {
+            id: crypto.randomUUID(),
+            fileName: file.name,
+            data: data,
+          };
+        })
+      );
+
+      setDatasets((prev) => [...prev, ...newDatasets]);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setIsLoading(false);
-      // ファイル入力をリセット
       event.target.value = "";
     }
   };
 
-  // データの消去
+  const handleRemoveDataset = (id: string) => {
+    setDatasets((prev) => prev.filter((dataset) => dataset.id !== id));
+  };
+
   const handleClear = () => {
-    setXrdData([]);
-    setFileName("");
+    setDatasets([]);
     setError(null);
   };
 
@@ -68,22 +80,26 @@ export default function Home() {
                 className="hidden"
                 accept=".xy,.txt,.csv"
                 onChange={handleFileUpload}
+                multiple
               />
               XRDファイルを選択
             </label>
           </Button>
-          {fileName && (
-            <div className="flex items-center">
-              <span className="text-sm">{fileName}</span>
-              <Button
-                variant={"ghost"}
-                size={"icon"}
-                onClick={() => console.log("hello")}
-              >
-                <X size={16} />
-              </Button>
-            </div>
-          )}
+          <div className="flex flex-wrap justify-center gap-2">
+            {datasets.map((dataset) => (
+              <div key={dataset.id} className="flex items-center bg-gray-100 rounded-full px-3 py-1">
+                <span className="text-sm">{dataset.fileName}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-1 h-6 w-6"
+                  onClick={() => handleRemoveDataset(dataset.id)}
+                >
+                  <X size={14} />
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -96,8 +112,8 @@ export default function Home() {
           <div className="flex justify-center items-center h-64 text-red-500">
             <p>{error}</p>
           </div>
-        ) : xrdData.length > 0 ? (
-          <Graph data={xrdData} fileName={fileName} onClear={handleClear} />
+        ) : datasets.length > 0 ? (
+          <Graph datasets={datasets} onClear={handleClear} />
         ) : (
           <div className="flex justify-center items-center h-64 text-gray-400">
             <p>XRDファイルをアップロードしてください</p>

@@ -24,24 +24,53 @@ ChartJS.register(
   Legend
 );
 
-interface GraphProps {
-  data: { x: number; y: number }[];
+interface XRDDataset {
+  id: string;
   fileName: string;
+  data: { x: number; y: number }[];
+}
+
+interface GraphProps {
+  datasets: XRDDataset[];
   onClear: () => void;
 }
 
-export function Graph({ data, fileName, onClear }: GraphProps) {
+// データセットごとに異なる色を生成する関数
+const getDatasetColor = (index: number) => {
+  const colors = [
+    "rgb(75, 192, 192)",   // ターコイズ
+    "rgb(255, 99, 132)",   // ピンク
+    "rgb(54, 162, 235)",   // ブルー
+    "rgb(255, 206, 86)",   // イエロー
+    "rgb(153, 102, 255)",  // パープル
+    "rgb(255, 159, 64)",   // オレンジ
+  ];
+  return colors[index % colors.length];
+};
+
+// Y軸方向のオフセット値を計算する関数
+const calculateOffset = (index: number) => {
+  // 各データセットを10倍ずつずらす
+  return Math.pow(10, index);
+};
+
+export function Graph({ datasets, onClear }: GraphProps) {
   const chartData = {
-    datasets: [
-      {
-        label: `XRDデータ - ${fileName}`,
-        data: data,
-        borderColor: "rgb(75, 192, 192)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
+    datasets: datasets.map((dataset, index) => {
+      const color = getDatasetColor(index);
+      const offset = calculateOffset(index);
+      return {
+        label: `XRDデータ - ${dataset.fileName}`,
+        data: dataset.data.map(point => ({
+          x: point.x,
+          y: point.y * offset // Y値にオフセットを掛ける
+        })),
+        borderColor: color,
+        backgroundColor: color.replace("rgb", "rgba").replace(")", ", 0.2)"),
         pointRadius: 1,
         borderWidth: 1,
-      },
-    ],
+      };
+    }),
   };
 
   const chartOptions = {
@@ -58,7 +87,14 @@ export function Graph({ data, fileName, onClear }: GraphProps) {
         type: "logarithmic" as const,
         title: {
           display: true,
-          text: "強度 (対数スケール)",
+          text: "強度 (任意単位)",
+        },
+        ticks: {
+          display: false, // Y軸の数値を非表示
+        },
+        grid: {
+          display: true, // グリッド線は表示したままにする
+          color: "rgba(0, 0, 0, 0.1)", // グリッド線の色を薄く設定
         },
       },
     },
@@ -70,6 +106,16 @@ export function Graph({ data, fileName, onClear }: GraphProps) {
         display: true,
         text: "X線回折 (XRD) データ",
       },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const dataset = datasets[context.datasetIndex];
+            const offset = calculateOffset(context.datasetIndex);
+            const originalY = context.raw.y / offset;
+            return `${dataset.fileName}: 2θ = ${context.raw.x.toFixed(2)}°, 強度 = ${originalY.toFixed(2)}`;
+          }
+        }
+      }
     },
   };
 
