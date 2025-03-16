@@ -67,7 +67,8 @@ export function Graph({ datasets, onClear }: GraphProps) {
         })),
         borderColor: color,
         backgroundColor: color.replace("rgb", "rgba").replace(")", ", 0.2)"),
-        pointRadius: 1,
+        pointRadius: 0, // ポイントを非表示
+        showLine: true, // 線を表示
         borderWidth: 1,
       };
     }),
@@ -98,6 +99,9 @@ export function Graph({ datasets, onClear }: GraphProps) {
         },
       },
     },
+    hover: {
+      mode: null as any, // ホバー時のインタラクションを無効化
+    },
     plugins: {
       legend: {
         position: "top" as const,
@@ -107,14 +111,7 @@ export function Graph({ datasets, onClear }: GraphProps) {
         text: "X線回折 (XRD) データ",
       },
       tooltip: {
-        callbacks: {
-          label: function(tooltipItem: any) {
-            const dataset = datasets[tooltipItem.datasetIndex];
-            const offset = calculateOffset(tooltipItem.datasetIndex);
-            const originalY = tooltipItem.raw.y / offset;
-            return `${dataset.fileName}: 2θ = ${tooltipItem.raw.x.toFixed(2)}°, 強度 = ${originalY.toFixed(2)}`;
-          }
-        }
+        enabled: false, // ツールチップを無効化
       }
     },
   };
